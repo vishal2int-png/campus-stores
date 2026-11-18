@@ -803,3 +803,185 @@ body > main {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Responsive layer: mobile + desktop web
+   ========================================================================== */
+#campus-stores {
+  /* `clip` keeps rounded corners without creating a scroll container,
+     so sticky navigation works. */
+  overflow: clip;
+  overflow-wrap: break-word;
+}
+#campus-stores .page,
+#campus-stores .opscard,
+#campus-stores small {
+  overflow-wrap: anywhere;
+}
+#campus-stores button {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+}
+#campus-stores .slotcard .sectionhead {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 4px;
+}
+
+/* --- Desktop web: wider canvas, sticky side nav, four-up monitor --- */
+body > main {
+  max-width: 1240px;
+}
+#campus-stores .shell {
+  background: linear-gradient(
+    90deg,
+    var(--nav) 0 154px,
+    var(--line) 154px 155px,
+    transparent 155px
+  );
+}
+#campus-stores nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  z-index: 4;
+  border-right: 0;
+  background: transparent;
+}
+@container (min-width: 1000px) {
+  #campus-stores .opsgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  #campus-stores .page {
+    padding: 22px 26px 26px;
+  }
+  #campus-stores .opsbar {
+    padding: 14px 22px;
+  }
+}
+
+/* --- Tablet / narrow web (container <= 650px) --- */
+@container (max-width: 650px) {
+  #campus-stores .shell {
+    background: none;
+  }
+  #campus-stores nav {
+    position: sticky;
+    top: 0;
+    align-self: stretch;
+    background: var(--nav);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 2px 8px light-dark(rgb(16 24 32 / 0.06), rgb(0 0 0 / 0.3));
+  }
+  #campus-stores nav::-webkit-scrollbar {
+    display: none;
+  }
+  #campus-stores nav button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  #campus-stores .shift button {
+    width: 100%;
+  }
+  #campus-stores .opsbar {
+    padding: 10px 12px;
+  }
+  #campus-stores .opshead .inline-actions,
+  #campus-stores .opshead .checkline {
+    width: 100%;
+  }
+  #campus-stores .opshead .checkline select {
+    flex: 1;
+  }
+  #campus-stores .slipmain,
+  #campus-stores .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #campus-stores .row > div:last-child,
+  #campus-stores .slipmain > .inline-actions {
+    justify-content: flex-start;
+  }
+  #campus-stores .tag {
+    white-space: normal;
+  }
+  #campus-stores .pricebar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  #campus-stores .inline-actions .checkline {
+    flex-wrap: wrap;
+  }
+}
+
+/* --- Phone (container <= 420px) --- */
+@container (max-width: 420px) {
+  #campus-stores .mast {
+    gap: 8px;
+  }
+  #campus-stores .clock {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    text-align: left;
+  }
+  #campus-stores .inline-actions > button,
+  #campus-stores form > button,
+  #campus-stores form .inline-actions > button,
+  #campus-stores .statusbar button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  #campus-stores .inline-actions .checkline select {
+    width: 100%;
+  }
+  #campus-stores .subform {
+    padding: 12px;
+  }
+  #campus-stores .slotcard {
+    padding: 10px;
+  }
+  #campus-stores .opsgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #campus-stores .statusbar {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+/* --- Edge-to-edge on small screens --- */
+@media (max-width: 480px) {
+  body {
+    padding: 0;
+  }
+  #campus-stores {
+    border-radius: 0;
+    border-inline: 0;
+    box-shadow: none;
+  }
+}
+
+/* --- Touch devices: comfortable targets, no iOS zoom on focus --- */
+@media (pointer: coarse) {
+  #campus-stores input,
+  #campus-stores select,
+  #campus-stores textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  #campus-stores nav button,
+  #campus-stores summary {
+    min-height: 44px;
+  }
+  #campus-stores .row:hover,
+  #campus-stores .slipbox:hover,
+  #campus-stores .opscard:hover {
+    background: inherit;
+    transform: none;
+  }
+}
