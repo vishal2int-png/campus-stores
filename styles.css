@@ -38,6 +38,10 @@ body > main {
   --mark: light-dark(#bd502f, #f2a585);
   --ok: light-dark(#e3f1e8, #2d4838);
   --oktxt: light-dark(#25523d, #bedac8);
+  --warn: light-dark(#fcebe6, #45261e);
+  --warntxt: light-dark(#8f2d14, #f7b7a3);
+  --info: light-dark(#e4eff5, #213844);
+  --infotxt: light-dark(#1b4960, #badbe9);
   background: var(--paper);
   color: var(--ink);
   font:
@@ -262,6 +266,158 @@ body > main {
 #campus-stores .good {
   background: var(--ok);
   color: var(--oktxt);
+}
+#campus-stores .tag.warn {
+  background: var(--warn);
+  color: var(--warntxt);
+  font-weight: 600;
+}
+#campus-stores .tag.info {
+  background: var(--info);
+  color: var(--infotxt);
+  font-weight: 600;
+}
+#campus-stores .tag.memo {
+  background: var(--memo);
+  color: var(--memotxt);
+  font-weight: 600;
+}
+#campus-stores .opsbar {
+  background: var(--desk);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 18px;
+  display: grid;
+  gap: 10px;
+}
+#campus-stores .opshead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#campus-stores .opsgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+#campus-stores .opscard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 5px;
+  align-content: start;
+}
+#campus-stores .opscard.risk {
+  background: var(--warn);
+  border-color: var(--mark);
+  color: var(--warntxt);
+}
+#campus-stores .opscard.okcard {
+  background: var(--ok);
+  color: var(--oktxt);
+}
+#campus-stores .riskbanner {
+  background: var(--warn);
+  color: var(--warntxt);
+  border: 1px solid var(--mark);
+  border-left: 4px solid var(--mark);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+#campus-stores .okbanner {
+  background: var(--ok);
+  color: var(--oktxt);
+  border: 1px solid var(--oktxt);
+  border-left: 4px solid var(--oktxt);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+#campus-stores .infobanner {
+  background: var(--info);
+  color: var(--infotxt);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sel);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+#campus-stores .pricebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--info);
+  color: var(--infotxt);
+  padding: 9px 12px;
+  border-radius: 7px;
+  margin: 10px 0;
+  font-weight: 600;
+}
+#campus-stores .slotlist {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+}
+#campus-stores .slotcard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--paper);
+  display: grid;
+  gap: 6px;
+}
+#campus-stores .slotcard.blocked {
+  border-color: var(--mark);
+  background: var(--warn);
+}
+#campus-stores .inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+#campus-stores .slipbox {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+  display: grid;
+  gap: 8px;
+}
+#campus-stores .slipmain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+#campus-stores .subform {
+  background: var(--desk);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+#campus-stores .checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+#campus-stores .checkline input[type="checkbox"] {
+  width: auto;
+  margin: 0;
 }
 #campus-stores .record {
   margin-top: 14px;
