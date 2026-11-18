@@ -525,3 +525,281 @@ body > main {
     min-height: 44px;
   }
 }
+
+/* ==========================================================================
+   UI enhancement layer — visual polish only (no layout changes that would
+   override the container queries above).
+   ========================================================================== */
+#campus-stores {
+  --radius: 12px;
+  --shadow-sm: 0 1px 2px light-dark(rgb(16 24 32 / 0.06), rgb(0 0 0 / 0.3));
+  --shadow-md: 0 4px 14px light-dark(rgb(16 24 32 / 0.08), rgb(0 0 0 / 0.35));
+  --shadow-lg: 0 18px 40px light-dark(rgb(16 24 32 / 0.12), rgb(0 0 0 / 0.45));
+  --accent-soft: light-dark(#eef4f7, #22313a);
+  box-shadow: var(--shadow-lg);
+  border-radius: 18px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Masthead */
+#campus-stores .mast {
+  background: linear-gradient(
+    135deg,
+    var(--paper) 0%,
+    light-dark(#f4f8f9, #263139) 100%
+  );
+  border-bottom: 1px solid var(--line);
+}
+#campus-stores .brandmark {
+  background: linear-gradient(135deg, var(--mark), light-dark(#d9773f, #e88b63));
+  box-shadow: 0 6px 16px light-dark(rgb(189 80 47 / 0.35), rgb(0 0 0 / 0.4));
+  border-radius: 12px;
+}
+#campus-stores .clock {
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 12px;
+}
+#campus-stores .clock small {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+#campus-stores .clock strong {
+  font-size: 16px;
+  color: var(--sel);
+}
+
+/* Shift banner */
+#campus-stores .shift {
+  border-left: 4px solid var(--mark);
+}
+#campus-stores .shift b {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11.5px;
+}
+#campus-stores .shift p {
+  margin-top: 2px;
+}
+#campus-stores .shift button {
+  border-radius: 999px;
+  padding: 8px 16px;
+  border-width: 1.5px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+#campus-stores .shift button:hover {
+  background: var(--memotxt);
+  color: var(--memo);
+  transform: translateX(2px);
+}
+
+/* Ops monitor */
+#campus-stores .opsbar {
+  background: linear-gradient(180deg, var(--desk), var(--paper));
+}
+#campus-stores .opshead > div:first-child {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#campus-stores .opshead strong {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+#campus-stores .opscard {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  border-top: 3px solid var(--line);
+}
+#campus-stores .opscard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+#campus-stores .opscard > strong:first-child {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--quiet);
+}
+#campus-stores .opscard.risk {
+  border-top-color: var(--mark);
+  animation: cs-pulse 2.4s ease-in-out infinite;
+}
+#campus-stores .opscard.risk > strong:first-child,
+#campus-stores .opscard.okcard > strong:first-child {
+  color: inherit;
+}
+#campus-stores .opscard.okcard {
+  border-top-color: var(--oktxt);
+}
+#campus-stores .opscard:last-child {
+  border-top-color: var(--sel);
+}
+@keyframes cs-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 light-dark(rgb(189 80 47 / 0.25), rgb(242 165 133 / 0.2));
+  }
+  50% {
+    box-shadow: 0 0 0 5px light-dark(rgb(189 80 47 / 0), rgb(242 165 133 / 0));
+  }
+}
+
+/* Navigation */
+#campus-stores nav button {
+  border-radius: 8px;
+  padding: 9px 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+#campus-stores nav button:hover {
+  background: light-dark(rgb(35 62 76 / 0.08), rgb(197 220 228 / 0.1));
+  border-color: transparent;
+}
+#campus-stores nav button[aria-pressed="true"] {
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+}
+
+/* Buttons */
+#campus-stores button {
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease, transform 0.1s ease;
+}
+#campus-stores button:hover {
+  box-shadow: var(--shadow-sm);
+}
+#campus-stores button:active {
+  transform: translateY(1px);
+}
+#campus-stores .primary {
+  background: linear-gradient(180deg, light-dark(#2d5164, #d3e6ec), var(--sel));
+  box-shadow: 0 2px 6px light-dark(rgb(35 62 76 / 0.25), rgb(0 0 0 / 0.35));
+}
+#campus-stores .primary:hover {
+  box-shadow: 0 4px 12px light-dark(rgb(35 62 76 / 0.32), rgb(0 0 0 / 0.45));
+  filter: brightness(1.06);
+}
+
+/* Inputs */
+#campus-stores select,
+#campus-stores input,
+#campus-stores textarea {
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#campus-stores select:hover,
+#campus-stores textarea:hover {
+  border-color: var(--quiet);
+}
+#campus-stores select:focus,
+#campus-stores textarea:focus {
+  border-color: var(--sel);
+  box-shadow: 0 0 0 3px light-dark(rgb(35 62 76 / 0.12), rgb(197 220 228 / 0.15));
+  outline: none;
+}
+
+/* Section headers */
+#campus-stores .sectionhead {
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--line);
+}
+#campus-stores .sectionhead h2 {
+  font-weight: 700;
+}
+
+/* Rows & slips */
+#campus-stores .row,
+#campus-stores .slipbox {
+  border-radius: 8px;
+  padding-inline: 8px;
+  transition: background 0.15s ease;
+}
+#campus-stores .row:hover,
+#campus-stores .slipbox:hover {
+  background: var(--accent-soft);
+}
+#campus-stores .row > div:last-child,
+#campus-stores .slipmain > .inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Tags as pills */
+#campus-stores .tag {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 600;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* Cards, banners, sub-forms */
+#campus-stores .record {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  box-shadow: var(--shadow-sm);
+}
+#campus-stores .subform {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+}
+#campus-stores .subform > strong:first-child {
+  font-size: 13.5px;
+  color: var(--sel);
+}
+#campus-stores .slotcard {
+  border-radius: 10px;
+  transition: box-shadow 0.15s ease;
+}
+#campus-stores .slotcard:hover {
+  box-shadow: var(--shadow-sm);
+}
+#campus-stores .riskbanner,
+#campus-stores .okbanner,
+#campus-stores .infobanner {
+  border-radius: 10px;
+}
+#campus-stores .riskbanner strong::before {
+  content: "⚠ ";
+}
+#campus-stores .okbanner strong::before {
+  content: "✓ ";
+}
+#campus-stores .pricebar {
+  border-radius: 10px;
+  border: 1px dashed light-dark(#9cc0d1, #3f6170);
+}
+#campus-stores .pricebar strong {
+  font-size: 15px;
+}
+
+/* Status bar */
+#campus-stores .statusbar {
+  font-size: 12.5px;
+}
+#campus-stores .statusbar span::before {
+  content: "●";
+  color: var(--oktxt);
+  margin-right: 6px;
+  font-size: 9px;
+  vertical-align: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #campus-stores *,
+  #campus-stores *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

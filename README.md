@@ -78,6 +78,13 @@ Campus Stores is a Product Engineer work sample set at a fictional campus media 
 
 ---
 
+## Verification status
+
+- **Automated (done):** A Node script loaded `index.html` + `app.js` into a small fake DOM and replayed the shift through the app's own click/change/submit handlers. All 14 checks passed: complete-kit confirmation, unit in repair, an overlapping reservation, a conflicting inspection buffer, an unavailable item type with and without a movable event, the partial return, the delayed ETA warning, reassignment with and without a spare, wrong and matching asset tags, the AD-15 variant, and state after reload.
+- **Not yet done:** Replaying the shift by hand in a real browser. The fake DOM checks logic and generated markup only. It does not cover CSS rendering, layout, or real browser events. Before submitting, follow the replay steps above in Chrome or Edge.
+
+---
+
 ## Run the app
 
 Open `index.html` in a modern browser. The app includes its scripts, styles, and icons and can run offline.
