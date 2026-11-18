@@ -332,6 +332,25 @@
   const badge = (t, tone = "") =>
     '<span class="tag' + (tone ? " " + tone : "") + '">' + esc(t) + "</span>";
 
+  const icon = (name) =>
+    '<svg aria-hidden="true" class="store-icon"><use href="#icon-' +
+    name +
+    '"></use></svg>';
+
+  const mono = (x) => '<span class="mono">' + esc(x) + "</span>";
+
+  const caps = (x) => '<span class="caps">' + esc(x) + "</span>";
+
+  // Percent position of `mins` on a [lo, hi] scale, clamped to 0–100.
+  const pct = (mins, lo, hi) =>
+    Math.max(0, Math.min(100, ((mins - lo) / Math.max(1, hi - lo)) * 100));
+
+  function fmtDuration(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return ((h ? h + "h " : "") + (m || !h ? m + "m" : "")).trim();
+  }
+
   function shortItemName(type) {
     if (/adapter/i.test(type)) return "Adapter";
     if (/projector/i.test(type)) return "Projector";
@@ -1076,6 +1095,354 @@
     return html;
   }
 
+  // ---------------------------------------------------------------------------
+  // Stitch-derived components. Everything below renders from live state only.
+  // ---------------------------------------------------------------------------
+
+  const telRow = (label, n, tone) =>
+    '<div class="telrow"><span>' +
+    esc(label) +
+    '</span><b class="mono ' +
+    tone +
+    '">' +
+    n +
+    "</b></div>";
+
+  function renderNav() {
+    const now = currentClockMins();
+    const openLoans = s.loans.filter((l) => !l.back);
+    const toReserve = s.requests.filter((r) => r.status !== "confirmed").length;
+    const ready = assets.filter(
+      (a) => !isRepair(a.id) && !out(a.id) && !activeInspectionLoan(a.id),
+    ).length;
+    const deskEntries = 2 + (s.phase >= 1 ? 1 : 0) + s.notes.length;
+    const counts = {
+      Requests: [toReserve ? String(toReserve) : "", "warn", "approved, not yet reserved"],
+      Inventory: [ready + "/" + assets.length, "", "units ready on shelf"],
+      "Loan register": [openLoans.length + " open", "ok", "open loan slips"],
+      "Desk book": [String(deskEntries), "", "desk book entries"],
+    };
+    const overdue = openLoans.filter((l) => now > toMins(l.due)).length;
+    const returned = s.loans.filter((l) => l.back).length;
+    const atRisk = computeAtRiskList().length;
+
+    let html =
+      '<div class="navgroup"><span class="caps navcaption">Desk records</span>';
+    html += pages
+      .map(([n, ic]) => {
+        const [c, tone, title] = counts[n] || ["", "", ""];
+        return (
+          '<button type="button" data-action="tab" data-val="' +
+          n +
+          '" aria-pressed="' +
+          (s.tab === n) +
+          '">' +
+          icon(ic) +
+          '<span class="navlabel">' +
+          n +
+          "</span>" +
+          (c
+            ? '<span class="navcount ' +
+              tone +
+              '" title="' +
+              esc(title) +
+              '">' +
+              esc(c) +
+              "</span>"
+            : "") +
+          "</button>"
+        );
+      })
+      .join("");
+    html += "</div>";
+    html +=
+      '<div class="telemetry"><div class="telemetryhead">' +
+      caps("Shift telemetry") +
+      "</div>" +
+      telRow("Active loans", openLoans.length, "") +
+      telRow("Checked in", returned, "ok") +
+      telRow("Overdue", overdue, overdue ? "bad" : "") +
+      telRow("Pickups at risk", atRisk, atRisk ? "warn" : "") +
+      "</div>";
+    return html;
+  }
+
+  function bookingStrip(r) {
+    const p = toMins(r.pickup);
+    const es = toMins(r.eventStart);
+    const ee = toMins(r.eventEnd);
+    const d = toMins(r.due);
+    const rd = d + s.bufferMins;
+    const day = (m) => (m >= 1440 ? "Sat" : "Fri");
+    const stage = (n, tag, time, title, sub, tone) =>
+      '<div class="stage ' +
+      tone +
+      '"><div class="stagehead">' +
+      caps("Stage 0" + n) +
+      '<span class="stagetag">' +
+      esc(tag) +
+      '</span></div><div class="stagetime mono">' +
+      esc(time) +
+      "</div><b>" +
+      esc(title) +
+      "</b><small>" +
+      esc(sub) +
+      "</small></div>";
+    return (
+      '<div class="strip"><div class="striphead">' +
+      icon("calendar") +
+      "<b>Booking window</b>" +
+      '<span class="chip mono">' +
+      esc(fmtDuration(Math.max(0, rd - p))) +
+      " incl. inspection</span></div><div class=\"stages\">" +
+      stage(1, day(p), fmtClock(p), "Pickup", "Checkout to " + (r.collector || r.owner), "pickup") +
+      stage(2, day(es), fmtClock(es) + " – " + fmtClock(ee), "Event", r.event, "event") +
+      stage(3, day(d), fmtClock(d), "Return due", "Back at the desk", "due") +
+      stage(4, "+" + s.bufferMins + " min", fmtClock(rd), "Ready again", "After inspection", "ready") +
+      "</div></div>"
+    );
+  }
+
+  function conflictCard(rk) {
+    const r = rk.req;
+    const l = rk.loan;
+    const u = rk.unit;
+    const sp = rk.spares[0];
+    const via = l.back
+      ? "checked in " + (l.checkedInAt || "")
+      : "via " + (l.handover ? l.handover.returningWho : l.who);
+    const gap = rk.readyMins - rk.pickupMins;
+    const lo = Math.min(rk.etaMins, rk.pickupMins) - 10;
+    const hi = Math.max(rk.readyMins, rk.pickupMins) + 15;
+    const at = (m) => pct(m, lo, hi).toFixed(1);
+    const mark = (m, label, tone) =>
+      '<span class="tlmark ' +
+      tone +
+      '" style="left:' +
+      at(m) +
+      '%"><i></i><small class="mono">' +
+      esc(fmtClock(m)) +
+      " · " +
+      esc(label) +
+      "</small></span>";
+    const box = (label, time, sub, tone) =>
+      '<div class="tbox ' +
+      tone +
+      '">' +
+      caps(label) +
+      '<span class="tboxtime mono">' +
+      esc(fmtClock(time)) +
+      "</span><small>" +
+      esc(sub) +
+      "</small></div>";
+
+    const spareUnit = assets.find((a) => a.type === u.type && a.id !== l.asset);
+    const demoToggle = spareUnit
+      ? btn(
+          isRepair(spareUnit.id)
+            ? "Restore spare " + spareUnit.id + " from repair"
+            : "Simulate no spare (send " + spareUnit.id + " to repair)",
+          "toggle-repair",
+          spareUnit.id,
+          "ghost",
+        )
+      : "";
+
+    let action;
+    if (sp) {
+      action =
+        '<div class="proposal"><div class="proposalhead">' +
+        caps("Proposed unit") +
+        badge("Same type", "good") +
+        '</div><div class="unitline">' +
+        icon("swap") +
+        "<div><b>" +
+        esc(sp.id + " · Compatible spare") +
+        "</b><small>" +
+        esc(sp.type + " · " + sp.model) +
+        '</small></div></div><div class="factgrid"><div>' +
+        caps("Shelf") +
+        '<b class="mono">Bin ' +
+        esc(sp.bin) +
+        "</b></div><div>" +
+        caps("Window check") +
+        '<b class="oktxt">Clear</b></div></div><p class="qualified">' +
+        icon("check") +
+        "<span>Free for " +
+        esc(r.pickup + " – " + r.due) +
+        " plus " +
+        s.bufferMins +
+        " min inspection, rechecked against loans, repairs and reservations.</span></p>" +
+        btn(
+          "Reassign compatible spare " +
+            sp.id +
+            " (" +
+            sp.model +
+            " · Bin " +
+            sp.bin +
+            ") to " +
+            r.id,
+          "reassign-spare",
+          r.id + ":" + l.asset + ":" + sp.id,
+          "primary big",
+        ) +
+        "</div>";
+    } else {
+      action =
+        '<div class="proposal none"><div class="proposalhead">' +
+        caps("No compatible spare") +
+        badge("Follow-up", "bad") +
+        "</div><p><b>No spare available:</b> " +
+        esc(
+          rk.blockedSpares.map((b) => b.reason).join(" ") ||
+            "All compatible units are busy or in repair.",
+        ) +
+        "</p><p>Booking needing follow-up: <b>" +
+        esc(r.id) +
+        " (" +
+        esc(r.club) +
+        " · " +
+        esc(r.owner) +
+        ")</b></p>" +
+        (r.followUpFlagged
+          ? badge("Flagged for organizer follow-up", "warn")
+          : btn(
+              "Flag " + r.id + " for organizer follow-up",
+              "flag-followup",
+              r.id + ":" + l.num,
+              "danger big",
+            )) +
+        "</div>";
+    }
+
+    return (
+      '<div class="conflict"><div class="conflicthead"><div class="conflicticon">' +
+      icon("alert") +
+      '</div><div class="conflicttitles"><div class="conflictchips">' +
+      '<span class="tag solidwarn">Conflict detected</span>' +
+      caps("Turnaround gap: " + gap + " min") +
+      '</div><strong class="conflict-title">' +
+      esc(rk.headline) +
+      "</strong><small>Reservation " +
+      mono(r.id) +
+      " · " +
+      esc(r.club + " · " + r.event + " (" + r.owner + ")") +
+      '</small></div></div><div class="conflictgrid"><div class="conflictwhy">' +
+      caps("1. Which pickup is affected?") +
+      '<div class="affected">' +
+      icon("calendar") +
+      "<div><b>" +
+      esc(r.id + " · " + r.club + " (" + fmtClock(rk.pickupMins) + " pickup)") +
+      "</b><small>Allocated to " +
+      mono(l.asset) +
+      " · " +
+      esc(u.model) +
+      "</small></div></div>" +
+      caps("2. Why? Timeline collision") +
+      '<div class="tboxes">' +
+      box("Expected return", rk.etaMins, l.asset + " " + via, "") +
+      box("Earliest ready", rk.readyMins, "+" + s.bufferMins + " min inspection", "info") +
+      box("Scheduled pickup", rk.pickupMins, r.id + " · " + r.owner, "hot") +
+      '</div><p class="gapline">' +
+      icon("clock") +
+      "<span>The " +
+      esc(shortItemName(u.type).toLowerCase()) +
+      " is expected to be ready " +
+      gap +
+      " minute" +
+      (gap === 1 ? "" : "s") +
+      " after pickup.</span></p>" +
+      '<div class="timeline" role="img" aria-label="' +
+      esc(
+        "Return " +
+          fmtClock(rk.etaMins) +
+          ", pickup " +
+          fmtClock(rk.pickupMins) +
+          ", ready " +
+          fmtClock(rk.readyMins),
+      ) +
+      '"><div class="tltrack"><span class="tlseg base" style="left:0;width:' +
+      at(rk.pickupMins) +
+      '%"></span><span class="tlseg gap" style="left:' +
+      at(rk.pickupMins) +
+      "%;width:" +
+      (at(rk.readyMins) - at(rk.pickupMins)).toFixed(1) +
+      '%"></span><span class="tlseg ready" style="left:' +
+      at(rk.readyMins) +
+      '%;right:0"></span></div>' +
+      mark(rk.etaMins, "Return", "ret below") +
+      mark(rk.pickupMins, "Pickup", "pick above") +
+      mark(rk.readyMins, "Ready", "rdy below") +
+      '</div></div><div class="conflictfix">' +
+      caps("3. What can I do about it?") +
+      action +
+      "</div></div>" +
+      '<div class="conflictfoot"><small>Friday loan ' +
+      mono("L-" + l.num) +
+      " stays open either way.</small>" +
+      demoToggle +
+      "</div></div>"
+    );
+  }
+
+  function kitProgress(r) {
+    const loans = reqLoans(r.id);
+    if (loans.length < 2) return "";
+    const back = loans.filter((l) => l.back).length;
+    const outLoans = loans.filter((l) => !l.back);
+    const p = Math.round((back / loans.length) * 100);
+    return (
+      '<div class="kitprogress' +
+      (outLoans.length ? "" : " done") +
+      '"><div class="kpicon">' +
+      icon("package") +
+      '</div><div class="kpbody"><div class="kptitle"><b>' +
+      back +
+      " of " +
+      loans.length +
+      " units checked in</b>" +
+      '<span class="chip mono">' +
+      esc(r.id + " · " + r.club) +
+      "</span></div><small>" +
+      (outLoans.length
+        ? esc(
+            outLoans.length +
+              " still out: " +
+              outLoans.map((l) => l.asset + " (L-" + l.num + ")").join(", "),
+          )
+        : "Whole kit back at the desk.") +
+      '</small></div><div class="kpbar"><div class="kplabels"><small class="mono oktxt">' +
+      back +
+      " restocked</small>" +
+      (outLoans.length
+        ? '<small class="mono badtxt">' + outLoans.length + " outstanding</small>"
+        : "") +
+      '</div><div class="bar"><span style="width:' +
+      p +
+      '%"></span></div></div></div>'
+    );
+  }
+
+  function inspectBar(l) {
+    const inM = toMins(l.checkedInAt);
+    const rdy = inM + s.bufferMins;
+    const now = currentClockMins();
+    const p = s.bufferMins ? pct(now, inM, rdy) : 100;
+    return (
+      '<div class="inspect"><div class="inspecthead">' +
+      caps("Inspection buffer") +
+      '<span class="mono primarytxt">+' +
+      s.bufferMins +
+      ' min</span></div><div class="bar thin"><span style="width:' +
+      p.toFixed(0) +
+      '%"></span></div><div class="inspectfoot mono"><span>Scanned ' +
+      esc(fmtClock(inM)) +
+      "</span><span>Ready " +
+      esc(fmtClock(rdy)) +
+      "</span></div></div>"
+    );
+  }
+
   function requestStatusBadge(r) {
     const loans = reqLoans(r.id);
     const openLoans = loans.filter((l) => !l.back);
@@ -1156,48 +1523,7 @@
       }
 
       if (riesgos.length > 0) {
-        const rk = riesgos[0];
-        html +=
-          '<div class="riskbanner"><strong>' +
-          esc(rk.headline) +
-          "</strong><small>Allocated unit <b>" +
-          esc(rk.loan.asset) +
-          "</b> is still out on Friday loan L-" +
-          rk.loan.num +
-          " (Reported ETA: " +
-          esc(
-            rk.loan.handover ? rk.loan.handover.returningWho : rk.loan.who,
-          ) +
-          " at " +
-          fmtClock(rk.etaMins) +
-          " + " +
-          s.bufferMins +
-          "m inspection = ready " +
-          fmtClock(rk.readyMins) +
-          ").</small><div class=\"inline-actions\">" +
-          (rk.spares.length > 0
-            ? btn(
-                "Reassign compatible spare " +
-                  rk.spares[0].id +
-                  " (" +
-                  rk.spares[0].model +
-                  " · Bin " +
-                  rk.spares[0].bin +
-                  ")",
-                "reassign-spare",
-                r.id + ":" + rk.loan.asset + ":" + rk.spares[0].id,
-                "primary",
-              )
-            : "<span><b>No compatible spare available:</b> " +
-              esc(rk.blockedSpares.map((b) => b.reason).join(" ")) +
-              "</span> " +
-              btn(
-                "Flag " + r.id + " for organizer follow-up",
-                "flag-followup",
-                r.id + ":" + rk.loan.num,
-                "primary",
-              )) +
-          "</div></div>";
+        html += conflictCard(riesgos[0]);
       } else if (r.reassignedTo) {
         const sp = getAsset(r.reassignedTo);
         html +=
@@ -1233,6 +1559,7 @@
         '<div class="subform"><strong>1. Event &amp; Reservation Window (Pickup through Return + ' +
         s.bufferMins +
         " min inspection)</strong>" +
+        bookingStrip(r) +
         '<div class="form">' +
         "<label><span>Planned pickup</span><select data-req-time=\"pickup\" data-req-id=\"" +
         esc(r.id) +
@@ -1438,7 +1765,8 @@
 
       // Step 3: Checkout & Unit Loan Slips section
       html +=
-        '<div class="subform" style="margin-top:10px"><strong>3. Counter Checkout &amp; Unit Loan Slips (One slip per physical unit)</strong>';
+        '<div class="subform" style="margin-top:10px"><strong>3. Counter Checkout &amp; Unit Loan Slips (One slip per physical unit)</strong>' +
+        kitProgress(r);
       if (loans.length > 0) {
         html +=
           "<small>Issued unit slips for " +
@@ -1722,6 +2050,10 @@
       "</div>";
 
     const risks = computeAtRiskList();
+    const rq214 = getReq("RQ-214");
+    if (rq214 && reqLoans("RQ-214").length >= 2) {
+      html += kitProgress(rq214);
+    }
     const shown = s.loans
       .filter((l) => !s.onlyOpen || !l.back)
       .slice()
@@ -1789,67 +2121,11 @@
       }
 
       if (slipRisk) {
-        const sp = slipRisk.spares[0];
-        const spareUnit = assets.find(
-          (a) => a.type === u.type && a.id !== l.asset,
-        );
-        html +=
-          '<div class="riskbanner"><strong>' +
-          esc(slipRisk.headline) +
-          "</strong><small>Conflicting reservation: <b>" +
-          esc(slipRisk.req.id) +
-          " · " +
-          esc(slipRisk.req.club) +
-          "</b> (" +
-          esc(slipRisk.req.event) +
-          " · Pickup " +
-          esc(slipRisk.req.pickup) +
-          "). Friday loan L-" +
-          l.num +
-          " remains open either way.</small><div class=\"inline-actions\">" +
-          (sp
-            ? btn(
-                "Reassign compatible spare " +
-                  sp.id +
-                  " (" +
-                  sp.model +
-                  " · Bin " +
-                  sp.bin +
-                  ") to " +
-                  slipRisk.req.id,
-                "reassign-spare",
-                slipRisk.req.id + ":" + l.asset + ":" + sp.id,
-                "primary",
-              )
-            : "<span><b>No spare available:</b> " +
-              esc(
-                slipRisk.blockedSpares.map((b) => b.reason).join(" ") ||
-                  "All compatible units busy/in repair.",
-              ) +
-              " · Booking needing follow-up: <b>" +
-              esc(slipRisk.req.id) +
-              " (" +
-              esc(slipRisk.req.club) +
-              " · " +
-              esc(slipRisk.req.owner) +
-              ")</b></span> " +
-              btn(
-                "Flag " + slipRisk.req.id + " for organizer follow-up",
-                "flag-followup",
-                slipRisk.req.id + ":" + l.num,
-                "primary",
-              )) +
-          (spareUnit
-            ? " " +
-              btn(
-                isRepair(spareUnit.id)
-                  ? "Restore spare " + spareUnit.id + " from repair"
-                  : "Simulate no spare (send " + spareUnit.id + " to repair)",
-                "toggle-repair",
-                spareUnit.id,
-              )
-            : "") +
-          "</div></div>";
+        html += conflictCard(slipRisk);
+      }
+
+      if (l.back && inInspection) {
+        html += inspectBar(l);
       }
 
       html += "</div><div class=\"inline-actions\">";
@@ -1957,7 +2233,9 @@
         }
 
         html +=
-          '<div class="inline-actions"><label class="checkline"><span>Tag on physical unit:</span><select name="tag">' +
+          '<div class="scanrow"><span class="scanprefix mono">' +
+          icon("scan") +
+          ' TAG:</span><select name="tag" class="mono">' +
           opts(
             assets.map((a) => [
               a.id,
@@ -1965,7 +2243,8 @@
             ]),
             l.asset,
           ) +
-          '</select></label><button type="submit" class="primary">Verify selected tag &amp; record return</button> ' +
+          '</select><button type="submit" class="primary">Verify tag &amp; record return</button></div>' +
+          '<div class="inline-actions">' +
           btn(
             "Test wrong tag (" + wrongAdapter + ")",
             "verify-tag-direct",
@@ -2046,20 +2325,7 @@
     advance.hidden = !phase.next;
     advance.textContent = phase.next || "";
     if (q("[data-ops]")) q("[data-ops]").innerHTML = renderOpsBar();
-    q("[data-nav]").innerHTML = pages
-      .map(
-        ([n, icon]) =>
-          '<button type="button" data-action="tab" data-val="' +
-          n +
-          '" aria-pressed="' +
-          (s.tab === n) +
-          '"><svg aria-hidden="true" class="store-icon"><use href="#icon-' +
-          icon +
-          '"></use></svg>' +
-          n +
-          "</button>",
-      )
-      .join("");
+    q("[data-nav]").innerHTML = renderNav();
     q("[data-page]").innerHTML = screens[s.tab]();
     if (q("[data-filter]")) q("[data-filter]").value = s.filter;
     q("[data-status]").textContent = s.notice;
